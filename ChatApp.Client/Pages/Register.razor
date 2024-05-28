@@ -1,0 +1,53 @@
+﻿@page "/register"
+@using ChatApp.Models
+
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+@inject IConfiguration Configuration
+
+<PageTitle>Register</PageTitle>
+
+<h1>Register</h1>
+
+<EditForm Model="this" OnValidSubmit="Registration">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="form-group">
+        <label for="registerUsername">Username:</label>
+        <InputText id="registerUsername" class="form-control" @bind-Value="registerUsername" />
+    </div>
+
+    <div class="form-group">
+        <label for="registerPassword">Password:</label>
+        <InputText id="registerPassword" type="password" class="form-control" @bind-Value="registerPassword" />
+    </div>
+
+    <div class="form-group">
+        <label for="registerEmail">Email:</label>
+        <InputText id="registerEmail" class="form-control" @bind-Value="registerEmail" />
+    </div>
+
+    <button type="submit" class="btn btn-primary">Register</button>
+</EditForm>
+
+@code{
+    private string registerUsername;
+    private string registerPassword;
+    private string registerEmail;
+
+    private async Task Registration()
+    {
+        Uri baseUrl = new Uri(Configuration["apiBaseUrl"]);
+        var requestUri = new Uri(baseUrl, "UserInfo/register");
+        var registerModel = new RegisterModel { Username = registerUsername, Password = registerPassword, Email = registerEmail };
+        
+        var response = await Http.PostAsJsonAsync(requestUri, registerModel);
+
+        if (response.IsSuccessStatusCode)
+        {
+            NavigationManager.NavigateTo("/");
+        }
+        
+    }
+}

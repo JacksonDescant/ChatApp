@@ -1,12 +1,15 @@
 ﻿@page "/chat"
+@attribute [Authorize]
+@using Microsoft.AspNetCore.Authorization
 @inject NavigationManager Navigation
+@inject IConfiguration Configuration
 @implements IAsyncDisposable
 
 <PageTitle>Chat</PageTitle>
 
 
-    <input @bind="userInput" placeholder="Your name" />
-    <input @bind="messageInput" placeholder="Your message" />
+    <input @bind="@userInput" placeholder="Your name" />
+    <input @bind="@messageInput" placeholder="Your message" />
     <button @onclick="SendMessage">Send</button>
 
 
@@ -22,11 +25,14 @@
     private string userInput;
     private string messageInput;
     private List<string> messages = new List<string>();
+    
+    
 
     protected override async Task OnInitializedAsync()
     {
+        Uri baseUrl = new Uri(Configuration["apiBaseUrl"]);
         hubConnection = new HubConnectionBuilder()
-            .WithUrl(Navigation.ToAbsoluteUri("https://localhost:7126/chathub"))
+            .WithUrl(new Uri(baseUrl, "chathub"))
             .Build();
 
         hubConnection.On<string, string>("ReceiveMessage", (user, message) =>
@@ -35,12 +41,6 @@
             messages.Add(encodedMessage);
             InvokeAsync(StateHasChanged);
         });
-        
-        hubConnection.Closed += async (error) =>
-        {
-            await Task.Delay(new Random().Next(0,5)*1000);
-            await hubConnection.StartAsync();
-        };
 
         await hubConnection.StartAsync();
     }

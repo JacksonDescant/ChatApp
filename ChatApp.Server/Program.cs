@@ -1,11 +1,21 @@
 using ChatApp.Server.Hubs;
+using ChatApp.Server.Data;
+using ChatApp.Server.Interfaces;
+using ChatApp.Server.Services;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddRazorPages();
-builder.Services.AddServerSideBlazor();
 builder.Services.AddSignalR();
+builder.Services.AddControllers();
+
+builder.Services.AddScoped<IUserInfoService, UserInfoService>();
+
+builder.Services.AddDbContext<UserInfoContext>(opts =>
+{
+    opts.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
+});
 
 builder.Services.AddCors(options =>
 {
@@ -28,7 +38,11 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
-app.MapBlazorHub();
+
+app.UseAuthorization();
+
 app.MapHub<ChatHub>("/chathub");
+
+app.MapControllers();
 
 app.Run();
