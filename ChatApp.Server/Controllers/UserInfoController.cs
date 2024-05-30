@@ -1,9 +1,11 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using ChatApp.Models;
 using ChatApp.Server.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 
 namespace ChatApp.Server.Controllers;
 
+[AllowAnonymous]
 [ApiController]
 [Route("[controller]")]
 public class UserInfoController : ControllerBase
@@ -15,16 +17,10 @@ public class UserInfoController : ControllerBase
         _userInfoService = userInfoService;
     }
     
-    [HttpGet]
-    public async Task<ActionResult<IEnumerable<UserInfo>>> Get()
-    {
-        return Ok("SUP");
-    }
-    
     [HttpPost("authenticate")]
-    public async Task<ActionResult<UserInfo>> Authenticate([FromBody] UserInfo userInfo)
+    public async Task<ActionResult<UserInfo>> Authenticate(UserInfo userInfo)
     {
-        var user = await _userInfoService.Authenticate(userInfo.Username, userInfo.Password);
+        var user = await _userInfoService.Authenticate(userInfo);
         if (user == null)
         {
             return Unauthorized();

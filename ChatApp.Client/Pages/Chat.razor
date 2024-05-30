@@ -1,14 +1,16 @@
 ﻿@page "/chat"
 @attribute [Authorize]
+
+@using ChatApp.Models
 @using Microsoft.AspNetCore.Authorization
-@inject NavigationManager Navigation
+@inject HttpClient Http
+@inject AuthenticationStateProvider AuthenticationStateProvider
 @inject IConfiguration Configuration
 @implements IAsyncDisposable
 
 <PageTitle>Chat</PageTitle>
 
 
-    <input @bind="@userInput" placeholder="Your name" />
     <input @bind="@messageInput" placeholder="Your message" />
     <button @onclick="SendMessage">Send</button>
 
@@ -22,34 +24,69 @@
 
 @code {
     private HubConnection hubConnection;
-    private string userInput;
+    private string Username;
     private string messageInput;
     private List<string> messages = new List<string>();
     
     
-
     protected override async Task OnInitializedAsync()
     {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        
+        if (user.Identity.IsAuthenticated)
+        {
+            Username = user.Identity.Name;
+        }
+        
         Uri baseUrl = new Uri(Configuration["apiBaseUrl"]);
         hubConnection = new HubConnectionBuilder()
             .WithUrl(new Uri(baseUrl, "chathub"))
             .Build();
+        
+        await hubConnection.StartAsync();
+
+        // Send a message when someone joins the chat page
+        if (hubConnection.State == HubConnectionState.Connected)
+        {
+            await hubConnection.SendAsync("SendMessage", "", $"{Username} has joined the chat");
+        }
 
         hubConnection.On<string, string>("ReceiveMessage", (user, message) =>
         {
-            var encodedMessage = $"{user}: {message}";
-            messages.Add(encodedMessage);
-            InvokeAsync(StateHasChanged);
+            if (string.IsNullOrWhiteSpace(user))
+            {
+                messages.Add(message);
+                InvokeAsync(StateHasChanged);
+            }
+            else
+            {
+                var encodedMessage = $"{user}: {message}";
+                messages.Add(encodedMessage);
+                InvokeAsync(StateHasChanged);
+            }
         });
-
-        await hubConnection.StartAsync();
     }
 
     private async Task SendMessage()
     {
         if (hubConnection.State == HubConnectionState.Connected)
         {
-            await hubConnection.SendAsync("SendMessage", userInput, messageInput);
+            await hubConnection.SendAsync("SendMessage", Username, messageInput);
+
+            var messageLog = new MessageLogs
+            {
+                Username = Username,
+                Message = messageInput,
+                Timestamp = DateTime.Now
+            };
+
+            Uri baseUrl = new Uri(Configuration["apiBaseUrl"]);
+            var requestUri = new Uri(baseUrl, "MessagerLogs/logger");
+            await Http.PostAsJsonAsync(requestUri, messageLog);
+
+            messageInput = string.Empty;
+            StateHasChanged();
         }
     }
 
@@ -57,6 +94,9 @@
 
     public async ValueTask DisposeAsync()
     {
-        await hubConnection.DisposeAsync();
-    }
+        if (hubConnection.State == HubConnectionState.Connected)
+        {
+            await hubConnection.SendAsync("SendMessage", "", $"{Username} has left the chat");
+        }
+        await hubConnection.DisposeAsync();    }
 }

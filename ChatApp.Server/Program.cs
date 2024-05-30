@@ -11,8 +11,14 @@ builder.Services.AddSignalR();
 builder.Services.AddControllers();
 
 builder.Services.AddScoped<IUserInfoService, UserInfoService>();
+builder.Services.AddScoped<IMessageLogsService, MessageLogsService>();
 
 builder.Services.AddDbContext<UserInfoContext>(opts =>
+{
+    opts.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
+});
+
+builder.Services.AddDbContext<MessageLogsContext>(opts=>
 {
     opts.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
 });

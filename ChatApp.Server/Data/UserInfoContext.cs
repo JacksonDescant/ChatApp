@@ -17,7 +17,7 @@ public UserInfoContext(DbContextOptions<UserInfoContext> options) : base(options
             eb =>
             {
                 eb.ToTable("UserInfo");
-                eb.HasKey(x => x.id);
+                eb.HasKey(x => x.Id);
                 eb.Property(b => b.Username);
                 eb.Property(b => b.Password);
                 eb.Property(b => b.Email);
