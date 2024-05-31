@@ -1,4 +1,4 @@
-﻿@page "/chat"
+﻿@page "/videogames"
 @attribute [Authorize]
 
 @using ChatApp.Models
@@ -8,8 +8,7 @@
 @inject IConfiguration Configuration
 @implements IAsyncDisposable
 
-<PageTitle>Chat</PageTitle>
-
+<PageTitle>Video Games</PageTitle>
 
 
     <input @bind="@messageInput" placeholder="Your message" />
@@ -28,8 +27,6 @@
     private string Username;
     private string messageInput;
     private List<string> messages = new List<string>();
-    private string bannerUrl;
-    private IBrowserFile file;
     
     
     protected override async Task OnInitializedAsync()
@@ -52,12 +49,12 @@
         // Send a message when someone joins the chat page
         if (hubConnection.State == HubConnectionState.Connected)
         {
-            await hubConnection.SendAsync("SendMessage", "", $"{Username} has joined the chat", "Chat");
+            await hubConnection.SendAsync("SendMessage", "", $"{Username} has joined the chat", "Video Games");
         }
 
         hubConnection.On<string, string, string>("ReceiveMessage", (user, message, room) =>
         {
-            if (room == "Chat")
+            if (room == "Video Games")
             {
                 if (string.IsNullOrWhiteSpace(user))
                 {
@@ -72,25 +69,17 @@
                 }
             }
         });
-        hubConnection.On<string, string>("ReceiveBanner", (room, bannerUrl) =>
-        {
-            if (room == "Chat")
-            {
-                // Update the banner with the new URL
-                // This will depend on how you're displaying the banner in your UI
-            }
-        });
     }
 
     private async Task SendMessage()
     {
         if (hubConnection.State == HubConnectionState.Connected)
         {
-            await hubConnection.SendAsync("SendMessage", Username, messageInput, "Chat");
+            await hubConnection.SendAsync("SendMessage", Username, messageInput, "Video Games");
 
             var messageLog = new MessageLogs
             {
-                Room = "Chat",
+                Room = "Video Games",
                 Username = Username,
                 Message = messageInput,
                 Timestamp = DateTime.Now
@@ -104,8 +93,6 @@
             StateHasChanged();
         }
     }
-    
-    
 
     public bool IsConnected => hubConnection.State == HubConnectionState.Connected;
 
@@ -113,8 +100,7 @@
     {
         if (hubConnection.State == HubConnectionState.Connected)
         {
-            await hubConnection.SendAsync("SendMessage", "", $"{Username} has left the chat", "Chat");
+            await hubConnection.SendAsync("SendMessage", "", $"{Username} has left the chat", "Video Games");
         }
-        await hubConnection.DisposeAsync();    
-    }
+        await hubConnection.DisposeAsync();    }
 }

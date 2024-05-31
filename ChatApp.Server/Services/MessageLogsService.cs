@@ -21,5 +21,4 @@ public class MessageLogsService : IMessageLogsService
         await _context.SaveChangesAsync();
         return messageLogs;
     }
-    
 }

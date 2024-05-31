@@ -21,6 +21,7 @@ public class MessageLogsContext : DbContext
                 eb.Property(b => b.Username);
                 eb.Property(b => b.Message);
                 eb.Property(b => b.Timestamp);
+                eb.Property(b => b.Room);
             });
 
     }
