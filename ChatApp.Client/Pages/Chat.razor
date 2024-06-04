@@ -4,117 +4,24 @@
 @using ChatApp.Models
 @using Microsoft.AspNetCore.Authorization
 @inject HttpClient Http
-@inject AuthenticationStateProvider AuthenticationStateProvider
 @inject IConfiguration Configuration
-@implements IAsyncDisposable
 
 <PageTitle>Chat</PageTitle>
 
-
-
-    <input @bind="@messageInput" placeholder="Your message" />
-    <button @onclick="SendMessage">Send</button>
-
-
 <ul>
-    @foreach (var message in messages)
+    @foreach (var chatRoom in chatRooms)
     {
-        <li>@message</li>
+        <li><a href="@($"chat/{chatRoom.Id}")">@chatRoom.Name</a></li>
     }
 </ul>
 
 @code {
-    private HubConnection hubConnection;
-    private string Username;
-    private string messageInput;
-    private List<string> messages = new List<string>();
-    private string bannerUrl;
-    private IBrowserFile file;
-    
-    
+    private List<ChatRoom> chatRooms = new List<ChatRoom>();
+
     protected override async Task OnInitializedAsync()
     {
-        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-        var user = authState.User;
-        
-        if (user.Identity.IsAuthenticated)
-        {
-            Username = user.Identity.Name;
-        }
-        
         Uri baseUrl = new Uri(Configuration["apiBaseUrl"]);
-        hubConnection = new HubConnectionBuilder()
-            .WithUrl(new Uri(baseUrl, "chathub"))
-            .Build();
-        
-        await hubConnection.StartAsync();
-
-        // Send a message when someone joins the chat page
-        if (hubConnection.State == HubConnectionState.Connected)
-        {
-            await hubConnection.SendAsync("SendMessage", "", $"{Username} has joined the chat", "Chat");
-        }
-
-        hubConnection.On<string, string, string>("ReceiveMessage", (user, message, room) =>
-        {
-            if (room == "Chat")
-            {
-                if (string.IsNullOrWhiteSpace(user))
-                {
-                    messages.Add(message);
-                    InvokeAsync(StateHasChanged);
-                }
-                else
-                {
-                    var encodedMessage = $"{user}: {message}";
-                    messages.Add(encodedMessage);
-                    InvokeAsync(StateHasChanged);
-                }
-            }
-        });
-        hubConnection.On<string, string>("ReceiveBanner", (room, bannerUrl) =>
-        {
-            if (room == "Chat")
-            {
-                // Update the banner with the new URL
-                // This will depend on how you're displaying the banner in your UI
-            }
-        });
-    }
-
-    private async Task SendMessage()
-    {
-        if (hubConnection.State == HubConnectionState.Connected)
-        {
-            await hubConnection.SendAsync("SendMessage", Username, messageInput, "Chat");
-
-            var messageLog = new MessageLogs
-            {
-                Room = "Chat",
-                Username = Username,
-                Message = messageInput,
-                Timestamp = DateTime.Now
-            };
-
-            Uri baseUrl = new Uri(Configuration["apiBaseUrl"]);
-            var requestUri = new Uri(baseUrl, "MessagerLogs/logger");
-            await Http.PostAsJsonAsync(requestUri, messageLog);
-
-            messageInput = string.Empty;
-            StateHasChanged();
-        }
-    }
-    
-    
-
-    public bool IsConnected => hubConnection.State == HubConnectionState.Connected;
-
-    public async ValueTask DisposeAsync()
-    {
-        if (hubConnection.State == HubConnectionState.Connected)
-        {
-            await hubConnection.SendAsync("SendMessage", "", $"{Username} has left the chat", "Chat");
-        }
-        await hubConnection.DisposeAsync();    
+        var requestUri = new Uri(baseUrl, "ChatRoom/GetChatRooms");
+        chatRooms = await Http.GetFromJsonAsync<List<ChatRoom>>(requestUri);
     }
 }

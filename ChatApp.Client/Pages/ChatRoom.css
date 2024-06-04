@@ -1,0 +1,10 @@
+﻿.active-users {
+    position: fixed;
+    right: 0;
+    top: 0;
+    width: 200px; /* adjust as needed */
+    height: 100vh; /* take full viewport height */
+    overflow-y: auto; /* add scroll if the list is long */
+    padding: 10px;
+    box-sizing: border-box;
+}

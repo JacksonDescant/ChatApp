@@ -9,9 +9,12 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddSignalR();
 builder.Services.AddControllers();
+builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddScoped<IUserInfoService, UserInfoService>();
 builder.Services.AddScoped<IMessageLogsService, MessageLogsService>();
+builder.Services.AddScoped<IChatRoomService, ChatRoomService>();
+
 
 builder.Services.AddDbContext<UserInfoContext>(opts =>
 {
@@ -19,6 +22,11 @@ builder.Services.AddDbContext<UserInfoContext>(opts =>
 });
 
 builder.Services.AddDbContext<MessageLogsContext>(opts=>
+{
+    opts.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
+});
+
+builder.Services.AddDbContext<ChatRoomContext>(opts=>
 {
     opts.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
 });

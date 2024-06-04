@@ -23,4 +23,10 @@
       <Folder Include="wwwroot\sample-data\" />
     </ItemGroup>
 
+    <ItemGroup>
+      <None Update="Pages\ChatRoom.css">
+        <DependentUpon>ChatRooms.razor</DependentUpon>
+      </None>
+    </ItemGroup>
+
 </Project>
