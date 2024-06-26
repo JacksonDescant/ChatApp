@@ -14,6 +14,7 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IUserInfoService, UserInfoService>();
 builder.Services.AddScoped<IMessageLogsService, MessageLogsService>();
 builder.Services.AddScoped<IChatRoomService, ChatRoomService>();
+builder.Services.AddSingleton<IChatRoomUserService, ChatRoomUserService>();
 
 
 builder.Services.AddDbContext<UserInfoContext>(opts =>

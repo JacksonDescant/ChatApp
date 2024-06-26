@@ -8,14 +8,15 @@
 @inject IConfiguration Configuration
 @implements IAsyncDisposable
 
-<h3>@chatRoom.Name</h3>
+<h3>@(chatRoom.Name)</h3>
 @if (!loading)
 {
     <img src="@bannerUrl" alt="" style="max-width: 100%; height: auto;"/>
 
-
-    <input @bind="@messageInput" placeholder="Your message" />
-    <button @onclick="SendMessage">Send</button>
+    <div class="message-bar">
+        <input @bind="@messageInput" placeholder="Your message" />
+        <button @onclick="SendMessage">Send</button>
+    </div>
 
 
     <ul>
@@ -26,6 +27,7 @@
     </ul>  
     
     <div class="active-users">
+        <h4>Active Users</h4>
         <ul>
             @foreach (var user in activeUsers)
             {
@@ -40,8 +42,6 @@ else
 }
 
 
-
-
 @code {
     [Parameter]
     public string Id { get; set; }
@@ -53,7 +53,7 @@ else
     private List<string> messages = new List<string>();
     private string bannerUrl;
     private bool loading = true;
-    private List<string> activeUsers = new List<string>();
+    private List<Tuple<string,string>> activeUsers = new List<Tuple<string,string>>();
     
      protected override async Task OnInitializedAsync()
     {
@@ -78,15 +78,10 @@ else
         await hubConnection.StartAsync();
 
         loading = false;
-        // Send a message when someone joins the chat page
-        if (hubConnection.State == HubConnectionState.Connected)
-        {
-            await hubConnection.SendAsync("SendMessage", "", $"{Username} has joined the chat", chatRoom.Name);
-        }
         
         if (hubConnection.State == HubConnectionState.Connected)
         {
-            await hubConnection.SendAsync("JoinRoom", chatRoom.Name);
+            await hubConnection.SendAsync("JoinRoom", chatRoom.Name, Username);
         }
 
         hubConnection.On<string, string, string>("ReceiveMessage", (user, message, room) =>
@@ -106,15 +101,11 @@ else
                 }
             }
         });
-    }
-
-    private async Task GetRoomUsers()
-    {
-        if (hubConnection.State == HubConnectionState.Connected)
+        hubConnection.On<List<Tuple<string, string>>>("UpdateUserList", (users) =>
         {
-            activeUsers = await hubConnection.InvokeAsync<List<string>>("GetRoomUsers", chatRoom.Name);
-            StateHasChanged();
-        }
+            activeUsers = users;
+            InvokeAsync(StateHasChanged);
+        });
     }
 
     private async Task SendMessage()
@@ -139,20 +130,13 @@ else
             StateHasChanged();
         }
     }
-
-    public bool IsConnected => hubConnection.State == HubConnectionState.Connected;
-
+    
     public async ValueTask DisposeAsync()
     {
         if (hubConnection.State == HubConnectionState.Connected)
         {
-            await hubConnection.SendAsync("SendMessage", "", $"{Username} has left the chat", chatRoom.Name);
+            await hubConnection.SendAsync("LeaveRoom", chatRoom.Name, Username);
         }
-        
-        if (hubConnection.State == HubConnectionState.Connected)
-        {
-            await hubConnection.SendAsync("LeaveRoom", chatRoom.Name);
-        }
-        await hubConnection.DisposeAsync();    
-    }
+        await hubConnection.DisposeAsync();
+    }   
 }
